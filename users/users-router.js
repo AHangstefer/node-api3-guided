@@ -1,5 +1,7 @@
 const express = require("express")
 const users = require("./users-model")
+const {checkUserId, checkUserData} = require("../middleware/user")
+const { orWhereNotExists } = require("../data/config")
 
 const router = express.Router()
 
@@ -13,34 +15,24 @@ router.get("/users", (req, res) => {
 		.then((users) => {
 			res.status(200).json(users)
 		})
+
+		//calling next with a perameter moves to the error middleware
+		//at the end of the middleware stack
+		//next(error)
+		//great for SERVICE SIDE ERRORS ONLY
 		.catch((error) => {
-			console.log(error)
-			res.status(500).json({
-				message: "Error retrieving the users",
-			})
+			next(error)
+
 		})
 })
 
-router.get("/users/:id", (req, res) => {
-	users.findById(req.params.id)
-		.then((user) => {
-			if (user) {
-				res.status(200).json(user)
-			} else {
-				res.status(404).json({
-					message: "User not found",
-				})
-			}
-		})
-		.catch((error) => {
-			console.log(error)
-			res.status(500).json({
-				message: "Error retrieving the user",
-			})
-		})
+router.get("/users/:id", checkUserId (req, res) => {
+	//user get attached to the request in "checkUserId"
+	res.status(200).json(req.user)
+			
 })
 
-router.post("/users", (req, res) => {
+router.post("/users", checkUserData(), (req, res) => {
 	if (!req.body.name || !req.body.email) {
 		return res.status(400).json({
 			message: "Missing user name or email",
